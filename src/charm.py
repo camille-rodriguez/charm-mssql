@@ -71,7 +71,7 @@ class MSSQLCharm(CharmBase):
                 or not any(char.islower() for char in password) \
                 or not any(char.isdigit() for char in password) \
                 or not any(char in ['!', '@', '$', '%', '?', '&', '*']
-                           for char in check_password):
+                           for char in password):
             self.model.unit.status = \
                 BlockedStatus("sa_password does not respect criteria")
             password = False
@@ -101,7 +101,7 @@ class MSSQLCharm(CharmBase):
                 BlockedStatus("ports is not a list of YAMLs")
             return
 
-        sa_password = _password_validation(self.framework.model.config["sa_password"])
+        sa_password = self._password_validation(self.framework.model.config["sa_password"])
         if not sa_password:
             return
 
