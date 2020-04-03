@@ -63,6 +63,24 @@ class MSSQLCharm(CharmBase):
             event.defer()
             return
 
+    def _password_validation(self, password):
+        log('Validating and encoding password', level='INFO')
+        if len(password) < 8 \
+                or len(password) > 20 \
+                or not any(char.isupper() for char in password) \
+                or not any(char.islower() for char in password) \
+                or not any(char.isdigit() for char in password) \
+                or not any(char in ['!', '@', '$', '%', '?', '&', '*']
+                           for char in check_password):
+            self.model.unit.status = \
+                BlockedStatus("sa_password does not respect criteria")
+            password = False
+        else:
+            password = b64encode((password).encode('utf-8')).decode('utf-8')
+
+        return password
+
+
     def set_pod_spec(self, event):
         if not self.model.unit.is_leader():
             print('Not a leader, skipping set_pod_spec')
@@ -83,20 +101,9 @@ class MSSQLCharm(CharmBase):
                 BlockedStatus("ports is not a list of YAMLs")
             return
 
-        log('Validating password', level='INFO')
-        check_password = self.framework.model.config["sa_password"]
-        if len(check_password) < 8 \
-                or len(check_password) > 20 \
-                or not any(char.isupper() for char in check_password) \
-                or not any(char.islower() for char in check_password) \
-                or not any(char.isdigit() for char in check_password) \
-                or not any(char in ['!', '@', '$', '%', '?', '&', '*']
-                           for char in check_password):
-            self.model.unit.status = \
-                BlockedStatus("sa_password does not respect criteria")
+        sa_password = _password_validation(self.framework.model.config["sa_password"])
+        if not sa_password:
             return
-        sa_password = b64encode((check_password).
-                                encode('utf-8')).decode('utf-8')
 
         log('Setting pod spec', level='INFO')
         self.framework.model.pod.set_spec({
