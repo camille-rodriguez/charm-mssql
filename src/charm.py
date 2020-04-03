@@ -88,7 +88,10 @@ class MSSQLCharm(CharmBase):
         if len(check_password) < 8 \
                 or len(check_password) > 20 \
                 or not any(char.isupper() for char in check_password) \
-                or not any(char.isdigit() for char in check_password):
+                or not any(char.islower() for char in check_password) \
+                or not any(char.isdigit() for char in check_password) \
+                or not any(char in ['!', '@', '$', '%', '?', '&', '*']
+                           for char in check_password):
             self.model.unit.status = \
                 BlockedStatus("sa_password does not respect criteria")
             return
